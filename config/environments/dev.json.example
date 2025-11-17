@@ -1,0 +1,27 @@
+{
+  "name": "development",
+  "baseUrl": "https://your-app-url.com",
+  "loginUrl": "https://your-app-url.com/login",
+  "apiBaseUrl": "https://your-api-url.com/",
+  "auth": {
+    "username": "your_username",
+    "password": "your_password",
+    "language": "English"
+  },
+  "features": {
+    "enableMocking": true,
+    "enableReporting": true,
+    "enableScreenshots": true,
+    "enableVideos": false
+  },
+  "timeouts": {
+    "default": 30000,
+    "navigation": 30000,
+    "assertion": 5000
+  },
+  "browser": {
+    "headless": false,
+    "slowMo": 0,
+    "devtools": false
+  }
+}

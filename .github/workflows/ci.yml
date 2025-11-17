@@ -1,0 +1,106 @@
+name: Playwright-Cucumber Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      browser:
+        description: 'Browser'
+        required: true
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+          - all
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: ${{ github.event.inputs.browser == 'all' && fromJSON('["chromium", "firefox", "webkit"]') || fromJSON(format('["{0}"]', github.event.inputs.browser || 'chromium')) }}
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps ${{ matrix.browser }}
+    
+    - name: Setup environment
+      run: |
+        echo "NODE_ENV=${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV
+        echo "BROWSER=${{ matrix.browser }}" >> $GITHUB_ENV
+        echo "CI=true" >> $GITHUB_ENV
+        echo "HEADLESS=true" >> $GITHUB_ENV
+        echo "USE_MCP=true" >> $GITHUB_ENV
+        echo "USE_ALLURE=true" >> $GITHUB_ENV
+    
+    - name: Run tests
+      run: npm test
+      continue-on-error: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.browser }}
+        path: |
+          reports/
+          test-results/
+          screenshots/
+        retention-days: 30
+    
+    - name: Upload MCP results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: mcp-results-${{ matrix.browser }}
+        path: reports/mcp-results/
+        retention-days: 30
+
+  report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Generate summary
+      run: |
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "Tests completed for all browsers" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Check artifacts for detailed reports" >> $GITHUB_STEP_SUMMARY
