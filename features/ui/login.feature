@@ -55,3 +55,27 @@ Feature: User Login
     When I leave password empty
     And I click Sign in
     Then I should see a validation error for password
+
+  # ============================================
+  # FORGOT PASSWORD SCENARIOS
+  # ============================================
+
+  @forgot-password @smoke
+  Scenario: Access forgot password page from login
+    When I enter valid username
+    And I select valid language
+    And I click Continue
+    When I click on forgot password link
+    Then I should be on the forgot password page
+    And email field should be pre-filled
+
+  @forgot-password @critical
+  Scenario: Successfully submit password reset request
+    When I enter valid username
+    And I select valid language
+    And I click Continue
+    When I click on forgot password link
+    And I enter a valid email address
+    And I click send reset link
+    Then I should see success message containing "5 minuten"
+    And I should see success message containing "24 uur geldig"

@@ -17,6 +17,7 @@ export class LoginPage {
       continueButton: this.page.locator('button:has-text("Continue"), button[type="submit"]').first(),
       passwordInput: this.page.locator('input[type="password"]').first(),
       signInButton: this.page.locator('button:has-text("Sign in"), button:has-text("Sign In")').first(),
+      forgotPasswordLink: this.page.locator('a:has-text("vergeten"), a:has-text("forgot"), a:has-text("Forgot Password")').first(),
       errorMessage: this.page.locator('.error, .error-message, [role="alert"], .alert-danger, .text-danger, .notification, .toast, div[class*="error"], div[class*="alert"]').first(),
     };
   }
@@ -135,5 +136,12 @@ export class LoginPage {
     } catch {
       return false;
     }
+  }
+
+  // Click forgot password link (on password screen)
+  async clickForgotPassword(): Promise<void> {
+    await this.elements.forgotPasswordLink.waitFor({ timeout: 5000 });
+    await this.elements.forgotPasswordLink.click();
+    await this.page.waitForURL('**/password/reset**', { timeout: 10000 });
   }
 }

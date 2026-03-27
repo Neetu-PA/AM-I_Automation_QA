@@ -7,6 +7,7 @@ import { setWorldConstructor, World, IWorldOptions } from '@cucumber/cucumber';
 import { BrowserContext, Page } from '@playwright/test';
 import { HomePage } from '../pages/home.page';
 import { LoginPage } from '../pages/login.page';
+import { ForgotPasswordPage } from '../pages/forgot-password.page';
 
 // Interface: defines what's available in tests
 export interface ICustomWorld extends World {
@@ -14,6 +15,7 @@ export interface ICustomWorld extends World {
   context?: BrowserContext;
   homePage?: HomePage;
   loginPage?: LoginPage;
+  forgotPasswordPage?: ForgotPasswordPage;
   testData?: any;
   currentUser?: string;
   testName?: string;
@@ -26,6 +28,7 @@ export class CustomWorld extends World implements ICustomWorld {
   context?: BrowserContext;
   homePage?: HomePage;
   loginPage?: LoginPage;
+  forgotPasswordPage?: ForgotPasswordPage;
   testData?: any;
   currentUser?: string;
   testName?: string;

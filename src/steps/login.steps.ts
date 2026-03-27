@@ -271,3 +271,74 @@ Then('I should see {string}', async function (this: ICustomWorld, expectedResult
   }
 });
 
+// ============================================
+// FORGOT PASSWORD - ACTIONS
+// ============================================
+
+When('I click on forgot password link', async function (this: ICustomWorld) {
+  if (!this.loginPage) throw new Error('LoginPage not initialized');
+  
+  console.log('Clicking forgot password link...');
+  await this.loginPage.clickForgotPassword();
+  console.log('✅ Navigated to forgot password page');
+});
+
+When('I click send reset link', async function (this: ICustomWorld) {
+  if (!this.forgotPasswordPage) throw new Error('ForgotPasswordPage not initialized');
+  
+  console.log('Clicking send reset link button...');
+  await this.forgotPasswordPage.clickSendLink();
+  console.log('✅ Reset link sent');
+});
+
+When('I enter a valid email address', async function (this: ICustomWorld) {
+  if (!this.forgotPasswordPage) throw new Error('ForgotPasswordPage not initialized');
+  
+  const { config } = await import('../support/config');
+  const email = config.TEST_USER.email || 'test@am-i.nl';
+  
+  await this.forgotPasswordPage.enterEmail(email);
+  console.log(`✅ Entered valid email: ${email}`);
+});
+
+// ============================================
+// FORGOT PASSWORD - ASSERTIONS
+// ============================================
+
+Then('I should be on the forgot password page', async function (this: ICustomWorld) {
+  if (!this.forgotPasswordPage) throw new Error('ForgotPasswordPage not initialized');
+  
+  const isOnPage = await this.forgotPasswordPage.isOnForgotPasswordPage();
+  expect(isOnPage).toBe(true);
+  
+  const isLoaded = await this.forgotPasswordPage.validatePageLoaded();
+  expect(isLoaded).toBe(true);
+  
+  console.log('✅ On forgot password page');
+});
+
+Then('email field should be pre-filled', async function (this: ICustomWorld) {
+  if (!this.forgotPasswordPage) throw new Error('ForgotPasswordPage not initialized');
+  
+  const prefilledEmail = await this.forgotPasswordPage.getPrefilledEmail();
+  expect(prefilledEmail).not.toBe('');
+  expect(prefilledEmail.length).toBeGreaterThan(0);
+  
+  console.log(`✅ Email pre-filled: ${prefilledEmail}`);
+});
+
+Then('I should see success message containing {string}', async function (this: ICustomWorld, expectedText: string) {
+  if (!this.forgotPasswordPage) throw new Error('ForgotPasswordPage not initialized');
+  
+  await this.page?.waitForTimeout(2000);
+  
+  const isVisible = await this.forgotPasswordPage.isSuccessMessageVisible();
+  expect(isVisible).toBe(true);
+  
+  const successMessage = await this.forgotPasswordPage.getSuccessMessage();
+  console.log(`📝 Success message: ${successMessage}`);
+  
+  expect(successMessage.toLowerCase()).toContain(expectedText.toLowerCase());
+  console.log(`✅ Success message contains: "${expectedText}"`);
+});
+

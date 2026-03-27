@@ -11,6 +11,7 @@ import { ITestCaseHookParameter } from '@cucumber/cucumber/lib/support_code_libr
 import { ensureDir } from 'fs-extra';
 import { HomePage } from '../pages/home.page';
 import { LoginPage } from '../pages/login.page';
+import { ForgotPasswordPage } from '../pages/forgot-password.page';
 
 let browser: Browser;
 const tracesDir = 'reports/traces';
@@ -61,6 +62,7 @@ Before(async function (this: ICustomWorld, { pickle }: ITestCaseHookParameter) {
   // Initialize page objects
   this.homePage = new HomePage(this.page);
   this.loginPage = new LoginPage(this.page);
+  this.forgotPasswordPage = new ForgotPasswordPage(this.page);
   
   // Log console errors
   this.page.on('console', async (msg: ConsoleMessage) => {

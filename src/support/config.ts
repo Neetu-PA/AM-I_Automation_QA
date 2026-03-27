@@ -60,6 +60,7 @@ export const config = {
     username: envConfig.auth?.username,
     password: envConfig.auth?.password,
     language: envConfig.auth?.language || 'English',
+    email: envConfig.auth?.email || `${envConfig.auth?.username}@am-i.nl`,
   },
   
   // Timeouts
