@@ -88,3 +88,7 @@ yarn-error.log*
 
 # Playwright
 .playwright/
+
+# Auth session — contains real tokens, never commit
+tests/storage-states/
+!tests/storage-states/.gitkeepplaywright-report/
