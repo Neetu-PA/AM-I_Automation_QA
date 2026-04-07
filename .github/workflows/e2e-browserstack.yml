@@ -3,7 +3,7 @@
 # Webdealer E2E Tests on BrowserStack
 # ─────────────────────────────────────────────────────────
 # Triggers:
-#   1. Daily CRON at 6:00 AM UTC (11:30 AM IST)
+#   1. Daily CRON at 12 AM CET = 11 PM UTC 
 #   2. Manual trigger (workflow_dispatch) — for demos / ad-hoc runs
 #   3. On push to main — catch regressions immediately
 # ─────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ env:
 
 jobs:
   e2e-browserstack:
-    name: Run E2E on BrowserStack
+    name: Run E2E WEB on BrowserStack
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
