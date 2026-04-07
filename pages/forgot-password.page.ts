@@ -1,23 +1,26 @@
 /**
  * ForgotPasswordPage — Password reset flow
  * -----------------------------------------
- * Selectors are managed in locators/forgot-password.locators.ts
- * Do NOT write any raw selectors in this file.
+ * Uses getByTestId directly — ask dev to confirm testids marked with ← below.
  */
 
 import { Page } from '@playwright/test';
-import { ForgotPasswordLocators, forgotSel } from '../locators';
 
 export class ForgotPasswordPage {
-  constructor(private page: Page) { }
+  constructor(public page: Page) {}
 
   private get elements() {
     return {
-      emailInput: this.page.locator(forgotSel(ForgotPasswordLocators.emailInput)).first(),
-      submitButton: this.page.locator(forgotSel(ForgotPasswordLocators.submitButton)).first(),
-      backToLoginLink: this.page.locator(forgotSel(ForgotPasswordLocators.backToLoginLink)).first(),
-      confirmationMessage: this.page.locator(forgotSel(ForgotPasswordLocators.confirmationMessage)).first(),
-      errorMessage: this.page.locator(forgotSel(ForgotPasswordLocators.errorMessage)).first(),
+      emailInput: this.page.getByTestId('reset-email-input')
+                    .or(this.page.locator('input[type="email"], input[type="text"]')).first(),
+      submitButton: this.page.getByTestId('reset-submit-btn')
+                    .or(this.page.locator('button[type="submit"]')).first(),
+      backToLoginLink: this.page.getByTestId('back-to-login')
+                    .or(this.page.locator('a:has-text("Back"), a:has-text("Login")')).first(),
+      confirmationMessage: this.page.getByTestId('reset-confirmation')
+                    .or(this.page.locator('.confirmation, [role="alert"]')).first(),
+      errorMessage: this.page.getByTestId('reset-error')
+                    .or(this.page.locator('[role="alert"], .error')).first(),
     };
   }
 
@@ -42,12 +45,12 @@ export class ForgotPasswordPage {
     await this.page.waitForURL('**/login**', { timeout: 10000 });
   }
 
-  // ─── Assertions / state checks ─────────────────────────────────────────────
+  // ─── State checks ──────────────────────────────────────────────────────────
 
   async isConfirmationVisible(): Promise<boolean> {
     try {
       await this.elements.confirmationMessage.waitFor({ timeout: 8000 });
-      return await this.elements.confirmationMessage.isVisible();
+      return this.elements.confirmationMessage.isVisible();
     } catch {
       return false;
     }

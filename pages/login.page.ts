@@ -1,40 +1,46 @@
 /**
- * LoginPage — AM-I two-step login flow
- * -------------------------------------
- * Uses data-testid selectors confirmed from dev repo.
- * Supports storageState session reuse for faster E2E tests.
+ * LoginPage — AM-I platform login (shared)
+ * ------------------------------------------
+ * Entry point for all AM-I services (Webdealer, CRM, etc.).
+ * Login is hosted on the Webdealer domain; CRM middleware redirects here.
+ * Selectors confirmed from webdealer LoginForm.tsx using getByTestId.
  */
 
 import { Page } from '@playwright/test';
 
 export class LoginPage {
-  constructor(private page: Page) { }
+  constructor(public page: Page) {}
 
-  // ─── Locators via getByTestId (matches dev repo pattern) ──────────────────
   private get elements() {
     return {
-      usernameInput: this.page.getByTestId('email'),
-      continueButton: this.page.getByTestId('continueButton'),
-      passwordInput: this.page.getByTestId('password'),
-      signInButton: this.page.getByTestId('signInButton'),
-      // fallback for unconfirmed testids:
-      forgotPasswordLink: this.page.getByTestId('forgot-password-link')
-        .or(this.page.locator('a:has-text("vergeten"), a:has-text("Forgot")')).first(),
-      errorMessage: this.page.getByTestId('error-alert')
-        .or(this.page.locator('[role="alert"]')).first(),
-      languageDropdown: this.page.getByTestId('language-dropdown')
-        .or(this.page.locator('select, [role="combobox"]')).first(),
+      usernameInput:      this.page.getByTestId('email'),
+      continueButton:     this.page.getByTestId('continueButton'),
+      passwordInput:      this.page.getByTestId('password'),
+      signInButton:       this.page.getByTestId('signInButton'),
+      // LoginForm.tsx: Link wraps Button — no data-testid on forgot password
+      forgotPasswordLink: this.page
+                            .getByRole('link', { name: /forgot|vergeten/i })
+                            .first(),
+      // LoginForm setError() — top FormHelperText; EN/NL copy from webdealer messages/*.json
+      errorMessage:       this.page
+                            .getByText(
+                              /Please enter valid username and password|Voer een geldige gebruikersnaam en wachtwoord in|The action was not executed|De actie werd niet uitgevoerd/i,
+                            )
+                            .or(this.page.locator('form .MuiFormHelperText-root.text-primary'))
+                            .or(this.page.getByTestId('error-alert'))
+                            .or(this.page.locator('[role="alert"]'))
+                            .first(),
     };
   }
 
   // ─── Navigation ────────────────────────────────────────────────────────────
 
-  async navigate(redirectUrl = '/stock'): Promise<void> {
+  async navigate(redirectUrl = '/dashboard-v2'): Promise<void> {
     await this.page.goto(`/login?redirectUrl=${encodeURIComponent(redirectUrl)}`);
     await this.page.waitForLoadState('domcontentloaded');
   }
 
-  // ─── Step 1 actions ────────────────────────────────────────────────────────
+  // ─── Actions ───────────────────────────────────────────────────────────────
 
   async enterUsername(username: string): Promise<void> {
     await this.elements.usernameInput.waitFor({ timeout: 10000 });
@@ -43,14 +49,14 @@ export class LoginPage {
 
   async clickContinue(): Promise<void> {
     await this.elements.continueButton.click();
+    // For basic auth users, password field appears in ~2-3s after getLoginMethod API call.
+    // For empty/invalid email, zod validation fails instantly — no API call, no password field.
     try {
-      await this.elements.passwordInput.waitFor({ state: 'visible', timeout: 10000 });
+      await this.elements.passwordInput.waitFor({ state: 'visible', timeout: 5_000 });
     } catch {
-      await this.page.waitForLoadState('domcontentloaded');
+      /* password field didn't appear — invalid email or SSO redirect */
     }
   }
-
-  // ─── Step 2 actions ────────────────────────────────────────────────────────
 
   async enterPassword(password: string): Promise<void> {
     await this.elements.passwordInput.waitFor({ timeout: 10000 });
@@ -61,7 +67,7 @@ export class LoginPage {
     await this.elements.signInButton.click();
   }
 
-  // ─── Combined flows ────────────────────────────────────────────────────────
+  // ─── Combined flow ─────────────────────────────────────────────────────────
 
   async login(username: string, password: string): Promise<void> {
     await this.enterUsername(username);
@@ -70,39 +76,31 @@ export class LoginPage {
     await this.clickSignIn();
   }
 
-  async loginAs(role: 'admin' | 'user' | 'readonly' = 'user'): Promise<void> {
-    const credentials: Record<string, { user: string; pass: string }> = {
-      admin: { user: process.env.ADMIN_USERNAME!, pass: process.env.ADMIN_PASSWORD! },
-      user: { user: process.env.TEST_USERNAME!, pass: process.env.TEST_PASSWORD! },
-      readonly: { user: process.env.RO_USERNAME!, pass: process.env.RO_PASSWORD! },
-    };
-    const { user, pass } = credentials[role];
-    await this.login(user, pass);
-  }
-
-  // ─── Save session after login (dev repo pattern) ───────────────────────────
-
-  async saveSession(path = 'tests/storage-states/auth.json'): Promise<void> {
-    await this.page.context().storageState({ path });
-  }
-
   // ─── Forgot password ───────────────────────────────────────────────────────
 
   async clickForgotPassword(): Promise<void> {
-    await this.elements.forgotPasswordLink.waitFor({ timeout: 5000 });
+    await this.elements.forgotPasswordLink.waitFor({ state: 'visible', timeout: 10_000 });
     await this.elements.forgotPasswordLink.click();
-    await this.page.waitForURL('**/password/reset**', { timeout: 10000 });
+    await this.page.waitForURL(/password\/reset/, { timeout: 15_000 });
   }
 
   // ─── State checks ──────────────────────────────────────────────────────────
 
   async isLoggedIn(): Promise<boolean> {
-    return !this.page.url().includes('/login');
+    try {
+      await this.page.waitForURL(
+        url => !url.pathname.includes('/login'),
+        { timeout: 15_000 },
+      );
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async hasErrorMessage(): Promise<boolean> {
     try {
-      await this.elements.errorMessage.waitFor({ timeout: 5000 });
+      await this.elements.errorMessage.waitFor({ state: 'visible', timeout: 20_000 });
       return true;
     } catch {
       return false;
@@ -121,7 +119,6 @@ export class LoginPage {
   async validatePageLoaded(): Promise<boolean> {
     try {
       await this.elements.usernameInput.waitFor({ timeout: 10000 });
-      await this.elements.continueButton.waitFor({ timeout: 5000 });
       return true;
     } catch {
       return false;

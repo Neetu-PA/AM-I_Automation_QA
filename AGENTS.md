@@ -19,8 +19,9 @@ e2e-tests/
 ├── pages/          ← page objects (*page.ts)
 ├── fixtures/       ← index.ts wires all page objects
 ├── helpers/        ← shared utils (actions, wait, assertions)
-├── playwright.config.ts
-├── playwright.bs.config.ts   ← BrowserStack config
+├── playwright.config.ts    ← local + SDK runs (default)
+├── browserstack.yml        ← BrowserStack SDK (platforms, auth, parallels)
+├── playwright.bs.config.ts ← optional manual CDP only (not used with SDK)
 ├── .env.example
 └── AGENTS.md
 ```
@@ -100,8 +101,9 @@ npx playwright test --headed
 # With trace
 npx playwright test --trace on
 
-# BrowserStack
-npx playwright test --config=playwright.bs.config.ts
+# BrowserStack (SDK reads browserstack.yml + uses playwright.config.ts)
+npx browserstack-node-sdk playwright test
+# or: npm run bs:smoke | bs:regression | bs:all
 ```
 
 ---
@@ -140,10 +142,10 @@ Never commit `.env`. Always update `.env.example` when adding new vars.
 
 ---
 
-## Adding BrowserStack (coming soon)
-- Config: `playwright.bs.config.ts`
-- Tags for cross-browser: `@browserstack`
-- Performance logs enabled via `browserstack.networkLogs: true`
+## BrowserStack
+- **SDK + `browserstack.yml`**: platforms, credentials (`BS_USERNAME` / `BS_ACCESS_KEY`), parallels, network/video logs.
+- **`playwright.config.ts`**: same as local — test discovery, `testIgnore`, projects, `baseURL`, timeouts.
+- **Do not** combine `browserstack-node-sdk` with `--config=playwright.bs.config.ts` unless you intend the optional manual CDP path (`npm run bs:manual-cdp`).
 
 
 ## Updated rule for AGENTS.md

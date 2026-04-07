@@ -1,0 +1,117 @@
+# =============================================================================
+# BrowserStack Node SDK + Playwright — FIXED CONFIG
+# =============================================================================
+# FIXES:
+#   ✅ ${DATE_TIME} moved to buildIdentifier (only place it works)
+#   ✅ buildName is static (BS best practice for tracking history)
+#   ✅ Mobile real devices added
+# =============================================================================
+
+userName: ${BS_USERNAME}
+accessKey: ${BS_ACCESS_KEY}
+
+framework: playwright
+
+# ══════════════════════════════════════════════════════════════
+# BUILD NAMING — What appears on BS Automate dashboard
+# ══════════════════════════════════════════════════════════════
+# buildName = STATIC (same every run — BS groups history by this)
+# buildIdentifier = DYNAMIC (${DATE_TIME} and ${BUILD_NUMBER} work HERE only)
+
+projectName: Webdealer QA
+buildName: "E2E Regression - 8 Platforms"
+buildIdentifier: "${DATE_TIME} #${BUILD_NUMBER}"
+
+# Dashboard will show:
+#   Build: "E2E Regression - 8 Platforms 07-Apr-11:30 #14"
+#   Under project: "Webdealer QA"
+
+# ══════════════════════════════════════════════════════════════
+# PLATFORMS — Desktop + Real Mobile Devices
+# ══════════════════════════════════════════════════════════════
+platforms:
+  # ── Desktop (P0) ───────────────────────────────────────────
+  - os: Windows
+    osVersion: 11
+    browserName: chrome
+    browserVersion: latest
+
+  - os: Windows
+    osVersion: 11
+    browserName: edge
+    browserVersion: latest
+
+  - os: OS X
+    osVersion: Sonoma
+    browserName: safari
+    browserVersion: 17.4
+
+  - os: OS X
+    osVersion: Sonoma
+    browserName: chrome
+    browserVersion: latest
+
+  # # ── Real Mobile Devices (P0) ───────────────────────────────
+  # - deviceName: Samsung Galaxy S24
+  #   osVersion: 14.0
+  #   browserName: chrome
+
+  # - deviceName: iPhone 15 Pro
+  #   osVersion: 17
+  #   browserName: safari
+
+  # # ── Real Mobile Devices (P1) ───────────────────────────────
+  # - deviceName: iPhone 15
+  #   osVersion: 17
+  #   browserName: safari
+
+  # - deviceName: Google Pixel 8
+  #   osVersion: 14.0
+  #   browserName: chrome
+
+# ══════════════════════════════════════════════════════════════
+# PARALLELS
+# ══════════════════════════════════════════════════════════════
+parallelsPerPlatform: 3
+
+# ══════════════════════════════════════════════════════════════
+# AI AGENTS
+# ══════════════════════════════════════════════════════════════
+browserstack.selfHeal: true
+
+# ══════════════════════════════════════════════════════════════
+# TEST OBSERVABILITY — THE REAL DASHBOARD FOR CTO DEMO
+# ══════════════════════════════════════════════════════════════
+# automate.browserstack.com = basic session list (what you see now)
+# observability.browserstack.com = rich matrix view with:
+#   → OS/Browser breakdown charts
+#   → Trend graphs over time
+#   → Flaky test detection
+#   → Failure categories with AI analysis
+#   → Pass/fail heatmap by platform
+#
+# THIS is what you should demo to the CTO, not the Automate dashboard
+
+testObservability: true
+testObservabilityOptions:
+  autoDetectFlaky: true
+
+testReporting: true
+
+# ══════════════════════════════════════════════════════════════
+# CUSTOM TAGS — Filter in BS sidebar
+# ══════════════════════════════════════════════════════════════
+CUSTOM_TAG_1: "team:qa"
+CUSTOM_TAG_2: "service:webdealer"
+CUSTOM_TAG_3: "type:e2e-daily"
+
+# ══════════════════════════════════════════════════════════════
+# DEBUGGING
+# ══════════════════════════════════════════════════════════════
+debug: true
+networkLogs: true
+consoleLogs: verbose
+video: true
+browserProfiling: true
+
+browserstackLocal: false

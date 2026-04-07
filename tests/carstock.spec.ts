@@ -8,25 +8,48 @@
  */
 
 import { test, expect } from '../fixtures';
+import { CarstockPage } from '../pages/carstock.page';
+import { carstockCreatePageReadyTimeoutMs, isBrowserStackLikeEnv } from '../helpers/carstock.helpers';
 
 test.describe('carstock create flow', () => {
 
-  test.beforeEach(async ({ carstockPage }) => {
+  // Serial: if one test fails, Playwright skips the rest in this block (shown as "-" in the report).
+  test.describe.configure({ mode: 'serial' });
+  // BrowserStack: login + RSC create page + actions need headroom beyond 60s on slow platforms.
+  test.setTimeout(
+    isBrowserStackLikeEnv() ? carstockCreatePageReadyTimeoutMs() + 90_000 : 90_000,
+  );
+
+
+  test.beforeEach(async ({ loggedInPage }) => {
+    await loggedInPage.waitForLoadState('domcontentloaded');
+    const carstockPage = new CarstockPage(loggedInPage);
     await carstockPage.navigate();
   });
 
-  // ─── Smoke ──────────────────────────────────────────────────────────────────
 
-  test('create page loads with action block @smoke', async ({ carstockPage }) => {
-    await expect(carstockPage.actionBlock).toBeVisible();
+  test.afterEach(async ({ page }) => {
+    await page.keyboard.press('Escape');
+    await page.waitForLoadState('domcontentloaded');
   });
 
-  test('create stock with start blank flow @smoke', async ({ carstockPage }) => {
-    const { id, vin } = await carstockPage.createStock();
 
+  // ─── Smoke ──────────────────────────────────────────────────────────────────
+
+  test('create page loads with action block @smoke', async ({ loggedInPage }) => {
+    const carstockPage = new CarstockPage(loggedInPage);
+    await expect(carstockPage.actionBlock).toBeVisible({
+      timeout: carstockCreatePageReadyTimeoutMs(),
+    });
+  });
+
+
+  test('create stock with start blank flow @smoke', async ({ loggedInPage }) => {
+    const carstockPage = new CarstockPage(loggedInPage);
+    const { id, vin } = await carstockPage.createStock();
     // Redirected to detail page
     expect(id).toBeTruthy();
-    expect(carstockPage.page.url()).toMatch(/\/stock\/\d+$/);
+    expect(loggedInPage.url()).toMatch(/\/stock\/\d+$/);
 
     // Header visible with correct VIN
     await carstockPage.waitForDetailPage();
@@ -55,15 +78,22 @@ test.describe('carstock create flow', () => {
 
     await carstockPage.waitForDetailPage();
     const statusDealer = await carstockPage.getStatusFieldValue('dealer');
-    expect(statusDealer).toBe(dealer);
+    // Dropdown label vs API `financialOwnerDisplayValue` can differ by case/spacing
+    expect(statusDealer.replace(/\s+/g, ' ').trim().toLowerCase()).toBe(
+      dealer.replace(/\s+/g, ' ').trim().toLowerCase(),
+    );
   });
 
   test('create stock — brand shows in specs block @regression', async ({ carstockPage }) => {
     const { brand } = await carstockPage.createStock();
 
     await carstockPage.waitForDetailPage();
+    await carstockPage.waitForSpecsFieldResolved('brand');
     const specsBrand = await carstockPage.getSpecsFieldValue('brand');
-    expect(specsBrand).toBe(brand);
+    // Create form label vs specs `brandDescription` (nl_NL) can differ slightly; "-" was async placeholder
+    expect(specsBrand.replace(/\s+/g, ' ').trim().toLowerCase()).toBe(
+      brand.replace(/\s+/g, ' ').trim().toLowerCase(),
+    );
   });
 
   test('create stock — imported defaults to No @regression', async ({ carstockPage }) => {
@@ -75,7 +105,10 @@ test.describe('carstock create flow', () => {
   });
 
   test('create stock with custom VIN @regression', async ({ carstockPage }) => {
-    const customVin = `TEST${Date.now().toString().slice(-9)}`.toUpperCase();
+    // Webdealer BlankSchema requires chassisNo length === 17 (TakeActionSchema CHASSIS_NO_LENGTH)
+    const customVin = `TEST${Date.now().toString().padStart(13, '0').slice(-13)}`.toUpperCase();
+    expect(customVin).toHaveLength(17);
+
     const { vin } = await carstockPage.createStock({ vin: customVin });
 
     expect(vin).toBe(customVin);

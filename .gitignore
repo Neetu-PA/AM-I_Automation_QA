@@ -9,6 +9,8 @@ build/
 *.tsbuildinfo
 
 # Test reports and artifacts
+playwright-report/
+log/
 reports/
 test-results/
 allure-results/
@@ -39,6 +41,7 @@ config/environments/prod.json
 *.swo
 *~
 .DS_Store
+.cursor/
 
 # OS files
 Thumbs.db
@@ -89,6 +92,6 @@ yarn-error.log*
 # Playwright
 .playwright/
 
-# Auth session — contains real tokens, never commit
-tests/storage-states/
-!tests/storage-states/.gitkeepplaywright-report/
+# BrowserStack
+local.log
+playwright.bs.config.ts
