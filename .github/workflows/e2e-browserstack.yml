@@ -1,0 +1,110 @@
+# .github/workflows/e2e-browserstack.yml
+# ─────────────────────────────────────────────────────────
+# Webdealer E2E Tests on BrowserStack
+# ─────────────────────────────────────────────────────────
+# Triggers:
+#   1. Daily CRON at 6:00 AM UTC (11:30 AM IST)
+#   2. Manual trigger (workflow_dispatch) — for demos / ad-hoc runs
+#   3. On push to main — catch regressions immediately
+# ─────────────────────────────────────────────────────────
+
+name: E2E Tests · BrowserStack
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # Daily 12:00 AM CET (11 PM UTC). Note: during CEST (Mar-Oct) this runs at 1 AM local — change to '0 22 * * *' if you want midnight during summer
+
+  workflow_dispatch:       # Manual trigger from GitHub UI
+    inputs:
+      suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - carstock
+          - login
+          - settings
+
+  push:
+    branches: [main]
+    paths:
+      - 'tests/**'
+      - 'pages/**'
+      - 'playwright.config.ts'
+      - 'browserstack.yml'
+
+env:
+  BROWSERSTACK_USERNAME: ${{ secrets.BS_USERNAME }}
+  BROWSERSTACK_ACCESS_KEY: ${{ secrets.BS_ACCESS_KEY }}
+  WEBDEALER_BASE_URL: ${{ secrets.WEBDEALER_BASE_URL }}
+  TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+  TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+
+jobs:
+  e2e-browserstack:
+    name: Run E2E on BrowserStack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── Checkout ──────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node.js Setup ─────────────────────────────────
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # ── Install Dependencies ──────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Install Playwright Browsers ───────────────────
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      # ── Run Tests on BrowserStack ─────────────────────
+      - name: Run E2E tests on BrowserStack
+        run: |
+          if [ "${{ github.event.inputs.suite }}" = "carstock" ]; then
+            npm run bs:carstock
+          elif [ "${{ github.event.inputs.suite }}" = "login" ]; then
+            npm run bs:login
+          elif [ "${{ github.event.inputs.suite }}" = "settings" ]; then
+            npm run bs:settings
+          else
+            npm run bs:test
+          fi
+        continue-on-error: true
+
+      # ── Upload Playwright Report ──────────────────────
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ github.run_number }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+      # ── Post summary to GitHub Actions ────────────────
+      - name: Post job summary
+        if: always()
+        run: |
+          echo "## 🧪 E2E BrowserStack Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Suite:** ${{ github.event.inputs.suite || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View on BrowserStack Dashboard](https://automate.browserstack.com/dashboard)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results/results.json ]; then
+            echo "📊 Results JSON available in artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
